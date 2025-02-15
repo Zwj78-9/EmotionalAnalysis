@@ -1,5 +1,4 @@
 import matplotlib
-matplotlib.use('TkAgg')
 import pandas as pd
 from imblearn.over_sampling import SMOTE
 from sklearn.feature_extraction.text import CountVectorizer
@@ -13,6 +12,8 @@ from collections import Counter
 import re
 import plotly.express as px
 import numpy as np
+
+matplotlib.use('TkAgg')
 
 # 设置支持中文的字体，SimHei（黑体）
 plt.rcParams['font.family'] = 'SimHei'
@@ -102,20 +103,17 @@ axes[1, 0].axis('off')
 axes[1, 0].set_title('积极情感文本中出现频率较高的前 20 个词汇词云')
 
 # 4. 折线图：展示随着时间推移，不同情感倾向的文本数量变化趋势（以每天为时间间隔进行统计）
-if 'created_at' in new_texts.columns:
-    # 指定日期时间格式进行转换
-    new_texts['created_at'] = pd.to_datetime(new_texts['created_at'], format='%a %b %d %H:%M:%S %z %Y')
-    new_texts['date'] = new_texts['created_at'].dt.date
-    daily_counts = new_texts.groupby(['date', 'sentiment']).size().unstack()
-    for sentiment in daily_counts.columns:
-        axes[1, 1].plot(daily_counts.index.astype(str), daily_counts[sentiment], label=sentiment)
-    axes[1, 1].set_xlabel('日期')
-    axes[1, 1].set_ylabel('文本数量')
-    axes[1, 1].set_title('不同情感倾向的文本数量随日期变化趋势')
-    axes[1, 1].legend()
-else:
-    axes[1, 1].text(0.5, 0.5, "新文本数据中缺少 'created_at' 列，无法绘制折线图。",
-                    horizontalalignment='center', verticalalignment='center', transform=axes[1, 1].transAxes)
+# 指定日期时间格式进行转换
+new_texts['created_at'] = pd.to_datetime(new_texts['created_at'], format='%a %b %d %H:%M:%S %z %Y')
+new_texts['date'] = new_texts['created_at'].dt.date
+daily_counts = new_texts.groupby(['date', 'sentiment']).size().unstack()
+for sentiment in daily_counts.columns:
+    axes[1, 1].plot(daily_counts.index.astype(str), daily_counts[sentiment], label=sentiment)
+axes[1, 1].set_xlabel('日期')
+axes[1, 1].set_ylabel('文本数量')
+axes[1, 1].set_title('不同情感倾向的文本数量随日期变化趋势')
+axes[1, 1].legend()
+
 
 # 调整子图之间的间距
 plt.tight_layout()
