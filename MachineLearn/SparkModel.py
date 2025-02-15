@@ -4,7 +4,8 @@ from pyspark.ml.classification import NaiveBayes
 from pyspark.ml.evaluation import MulticlassClassificationEvaluator
 from pyspark.ml import Pipeline
 from pyspark.sql.functions import col, explode, array, lit
-
+from pyspark.sql.functions import col, udf
+from pyspark.sql.types import StringType
 # 创建SparkSession
 spark = SparkSession.builder \
     .appName("SentimentAnalysis") \
@@ -66,11 +67,29 @@ new_texts = spark.read.csv(new_texts_path, header=True, inferSchema=True)
 # 进行情感分类
 new_predictions = model.transform(new_texts)
 
-# 将预测结果转换为Pandas DataFrame
+# 获取 Stc
+# ringIndexerModel 的标签列表
+string_indexer_model = model.stages[2]
+labels = string_indexer_model.labels
+
+# 定义反向映射函数
+def index_to_label(index):
+    try:
+        return labels[int(index)]
+    except (IndexError, ValueError):
+        return None
+
+# 创建 UDF
+index_to_label_udf = udf(index_to_label, StringType())
+
+# 将预测结果的索引转换为原始的情感标签
+new_predictions = new_predictions.withColumn("predicted_sentiment", index_to_label_udf(col("prediction")))
+
+# 将预测结果转换为 Pandas DataFrame
 new_predictions_pd = new_predictions.toPandas()
 
 # 统计各类情感的文本数量
-sentiment_counts = new_predictions_pd['prediction'].value_counts()
+sentiment_counts = new_predictions_pd['predicted_sentiment'].value_counts()
 print("各类情感的文本数量统计：")
 print(sentiment_counts)
 
